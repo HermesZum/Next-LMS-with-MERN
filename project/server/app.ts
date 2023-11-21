@@ -1,6 +1,7 @@
 import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from "cookie-parser";
+import { ErrorMiddleware } from "./middleware/error";
 
 /**
  * @summary  Used to load environment variables from a .env file into the process.env object in Node.js.
@@ -50,3 +51,9 @@ app.all('*', (req:Request, res:Response, next:NextFunction) => {
     err.statusCode = 404;
     next(err);
 });
+
+/**
+ * @summary Adds the ErrorMiddleware function to the middleware stack of the Express application.
+ * The ErrorMiddleware function is designed to handle errors that occur while processing the request.
+ */
+app.use(ErrorMiddleware);
