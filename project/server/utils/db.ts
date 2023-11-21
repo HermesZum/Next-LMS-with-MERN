@@ -31,3 +31,8 @@ const connectDB = async () => {
         setTimeout(connectDB, 5000);
     }
 }
+
+/**
+ * @summary export the connectDB function as the default module export.
+ */
+export default connectDB;
