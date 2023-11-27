@@ -15,7 +15,7 @@ const emailRegexPattern: RegExp = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 /**
  * @summary This interface defines the User model.
  */
-interface IUser extends Document {
+export interface IUser extends Document {
     name: string;
     email: string;
     password: string;

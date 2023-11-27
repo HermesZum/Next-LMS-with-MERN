@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import ErrorHandle from "../utils/ErrorHandle";
 import { CatchAsyncError } from "../middleware/catchAsyncErrors";
-import userModel from "../models/user.model";
+import userModel, { IUser } from "../models/user.model";
 import * as jwt from 'jsonwebtoken';
 import { Secret } from "jsonwebtoken";
 import * as path from 'path';
@@ -121,3 +121,65 @@ export const createActivationToken = (user: any): IActivationToken => {
 
     return { token, activationCode };
 }
+
+/**
+ * @interface IActivationRequest
+ * @description Interface for the activation request body.
+ * @property {string} activation_token - The JWT token used for account activation.
+ * @property {string} activation_code - The activation code sent to the user's email.
+ */
+interface IActivationRequest{
+    activation_token: string;
+    activation_code: string;
+}
+
+
+/**
+ * @function activateUser
+ * @description This function is used to activate a user's account.
+ * It first verifies the activation token and code received from the request body.
+ * If the verification is successful, it checks if the user already exists in the database using the email.
+ * If the user does not exist, it creates a new user with the provided name, email, and password.
+ * If the user creation is successful, it sends a response with a success message.
+ * If any error occurs during this process, it passes the error to the next middleware function.
+ * @param {Request} req - The request object, expected to contain the activation token and code in the body.
+ * @param {Response} res - The response object, used to send the response to the client.
+ * @param {NextFunction} next - The next middleware function.
+ * @returns {Promise<void>} - Returns a promise that resolves to void.
+ */
+export const activateUser = CatchAsyncError(async ( req: Request, res: Response, next: NextFunction ) => {
+    try {
+        const { activation_token, activation_code } = req.body as IActivationRequest;
+
+        const newUser: {user: IUser, activationCode: string} = jwt.verify(
+            activation_token,
+            process.env.JWT_ACTIVATION_SECRET as Secret
+        ) as {user: IUser, activationCode: string};
+
+        if(newUser.activationCode !== activation_code) {
+            return next(new ErrorHandle("Invalid activation code.", 400));
+        }
+
+        const { name, email, password } = newUser.user;
+
+        const existUser = await userModel.findOne({ email });
+
+        if (existUser) {
+            return next(new ErrorHandle("Email already exists.", 400));
+        }
+
+        const user = await userModel.create({
+            name,
+            email,
+            password,
+        });
+
+        res.status(201).json({
+            success: true,
+            message: "Account has been activated.",
+        });
+    }
+    catch (error:any) {
+        return next(new ErrorHandle(error.message, 400));
+    }
+});
