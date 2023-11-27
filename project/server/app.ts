@@ -2,6 +2,7 @@ import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from "cookie-parser";
 import { ErrorMiddleware } from "./middleware/error";
+import userRouter from "./routes/user.route";
 
 /**
  * @summary  Used to load environment variables from a .env file into the process.env object in Node.js.
@@ -28,6 +29,11 @@ app.use(express.json({limit: '50mb'}));
  * to a different domain than the one that served the web page.
  */
 app.use(cors({ origin: process.env.ORIGIN }));
+
+/**
+ * @summary Mount the userRouter on "/api/v1", all routes defined in userRouter will be prefixed with "/api/v1"
+ */
+app.use("/api/v1", userRouter);
 
 /**
  * @summary Creates a new route

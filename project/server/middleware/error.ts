@@ -22,12 +22,12 @@ export const ErrorMiddleware = (
     /**
      * @summary Checks if the error object has a statusCode and message property, if not, it sets default values.
      */
-    err.statusCode = err.statusCode || 500;
+    let statusCode = err.statusCode || 500;
 
     /**
      * @summary Checks if the error object has a statusCode and message property, if not, it sets default values.
      */
-    err.message = err.message || 'Internal Server Error';
+    let message = err.message || 'Internal Server Error';
 
     /**
      * @summary Checks if the error name is 'CastError'.
@@ -36,7 +36,7 @@ export const ErrorMiddleware = (
      * The new instance of ErrorHandle replaces the original error.
      */
     if (err.name === 'CastError') {
-        const message = `Resource not found. Invalid: ${err.path}`;
+        message = `Resource not found. Invalid: ${err.path}`;
         err = new ErrorHandle(message, 400);
     }
 
@@ -47,7 +47,7 @@ export const ErrorMiddleware = (
      * The new instance of ErrorHandle replaces the original error.
      */
     if (err.code === 11000) {
-        const message = `Duplicate ${Object.keys(err.keyValue)} entered`;
+        message = `Duplicate ${Object.keys(err.keyValue)} entered`;
         err = new ErrorHandle(message, 400);
     }
 
@@ -58,7 +58,7 @@ export const ErrorMiddleware = (
      * The new instance of ErrorHandle replaces the original error.
      */
     if (err.name === 'JsonWebTokenError') {
-        const message = `JSON Web Token is invalid. Try Again!!!`;
+        message = `JSON Web Token is invalid. Try Again!!!`;
         err = new ErrorHandle(message, 400);
     }
 
@@ -69,7 +69,7 @@ export const ErrorMiddleware = (
      * The new instance of ErrorHandle replaces the original error.
      */
     if (err.name === 'TokenExpiredError') {
-        const message = `JSON Web Token is expired. Try Again!!!`;
+        message = `JSON Web Token is expired. Try Again!!!`;
         err = new ErrorHandle(message, 400);
     }
 
@@ -79,8 +79,8 @@ export const ErrorMiddleware = (
      * The 'success' property is set to false, indicating that the request was not successful.
      * The 'message' property is set to the message of the error.
      */
-    res.status(err.statusCode).json({
+    res.status(statusCode).json({
         success: false,
-        message: err.message,
+        message: message,
     });
 }
