@@ -7,9 +7,17 @@ import { Secret } from "jsonwebtoken";
 import * as path from 'path';
 import * as ejs from 'ejs';
 import sendMail from "../sendMail";
+import { sendToken } from "../utils/jwt";
 
 
-// Load environment variables from a .env file into process.env
+/**
+ * @summary This line of code loads the environment variables from a .env file into process.env.
+ * @description The dotenv module is used to load environment variables from a .env file into process.env.
+ * This allows you to separate secrets from your source code.
+ * This is useful in a development environment,
+ * where you can set environment variables in your .env file
+ * and not have to worry about setting them in the development environment.
+ */
 require ('dotenv').config();
 
 /**
@@ -177,6 +185,89 @@ export const activateUser = CatchAsyncError(async ( req: Request, res: Response,
         res.status(201).json({
             success: true,
             message: "Account has been activated.",
+        });
+    }
+    catch (error:any) {
+        return next(new ErrorHandle(error.message, 400));
+    }
+});
+
+/**
+ * @interface ILoginRequest
+ * @summary This interface represents the request body for the login request.
+ * @description It includes fields for the email and password of the user.
+ * @property {string} email - The email of the user.
+ * @property {string} password - The password of the user.
+ */
+interface ILoginRequest {
+    email: string;
+    password: string;
+}
+
+/**
+ * @function loginUser
+ * @summary This function is used to authenticate a user.
+ * @description It first extracts the email and password from the request body.
+ * If either the email or password is missing, it sends an error response.
+ * Then, it finds the user in the database using the email.
+ * If the user is not found, it sends an error response.
+ * If the user is found, it compares the provided password with the hashed password stored in the database.
+ * If the passwords do not match, it sends an error response.
+ * If the passwords match, it generates an access token and a refresh token for the user and sends them in the response.
+ * @param {Request} req - The request object, expected to contain the email and password in the body.
+ * @param {Response} res - The response object, used to send the response to the client.
+ * @param {NextFunction} next - The next middleware function.
+ * @returns {Promise<void>} - Returns a promise that resolves to void.
+ */
+export const loginUser = CatchAsyncError(async ( req: Request, res: Response, next: NextFunction ) => {
+    try {
+        const { email, password } = req.body as ILoginRequest;
+
+        if (!email || !password) {
+            return next(new ErrorHandle("Please enter email & password.", 400));
+        }
+
+        const user = await userModel.findOne({ email }).select("+password");
+
+        if (!user) {
+            return next(new ErrorHandle("Invalid credentials.", 401));
+        }
+
+        const isPasswordMatched = await user.comparePassword(password);
+
+        if (!isPasswordMatched) {
+            return next(new ErrorHandle("Invalid credentials.", 401));
+        }
+
+        sendToken(user, 200, res);
+    }
+    catch (error:any) {
+        return next(new ErrorHandle(error.message, 400));
+    }
+});
+
+/**
+ * @function logoutUser
+ * @summary This function is used to log out a user.
+ * @description It clears the access token and refresh token cookies by setting them to null and their maxAge to 1 millisecond. Then, it sends a JSON response with the success status and a message indicating that the user has been logged out successfully. If any error occurs during this process, it passes the error to the next middleware function.
+ * @param {Request} req - The request object.
+ * @param {Response} res - The response object, used to send the response to the client.
+ * @param {NextFunction} next - The next middleware function.
+ * @returns {Promise<void>} - Returns a promise that resolves to void.
+ */
+export const logoutUser = CatchAsyncError(async ( req: Request, res: Response, next: NextFunction ) => {
+    try {
+        res.cookie('access_token', null, {
+            maxAge: 1,
+        });
+
+        res.cookie('refresh_token', null, {
+            maxAge: 1,
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "Logged out successfully.",
         });
     }
     catch (error:any) {
